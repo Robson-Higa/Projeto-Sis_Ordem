@@ -1,18 +1,21 @@
+// src/routes/index.tsx
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { useAuth } from '../contexts/AuthContext';
-import AdminStack from './AdminStack';
-import TechnicianStack from './TechnicianStack';
-import UserStack from './UserStack';
-import EstablishmentStack from './EstablishmentStack';
-import AuthStack from './AuthStack'; // Tela de login
+import { useAuth } from '../modules/auth/AuthContext';
+import AdminStack from '../stacks/AdminStack';
+import TechnicianStack from '../stacks/TechnicianStck';
+import UserStack from '../stacks/UserStack';
+import EstablishmentStack from '../stacks/EstablishmentStack';
+import AuthStack from '../stacks/AuthStack';
 
-const Routes = () => {
-  const { role } = useAuth();
+export default function Routes() {
+  const { user, loading } = useAuth();
 
-  if (!role) return <AuthStack />;
+  if (loading) return null;
 
-  switch (role) {
+  if (!user) return <AuthStack />;
+
+  switch (user.role) {
     case 'admin':
       return <AdminStack />;
     case 'technician':
@@ -24,10 +27,4 @@ const Routes = () => {
     default:
       return <AuthStack />;
   }
-};
-
-export default () => (
-  <NavigationContainer>
-    <Routes />
-  </NavigationContainer>
-);
+}

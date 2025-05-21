@@ -1,9 +1,9 @@
 // src/modules/auth/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../services/firebase';
-import * as service from './authService';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import * as authService from './authService';
 
 type UserData = {
   uid: string;
@@ -12,7 +12,7 @@ type UserData = {
   role: 'admin' | 'technician' | 'user' | 'establishment';
 };
 
-interface AuthContextData {
+interface AuthContextProps {
   user: UserData | null;
   loading: boolean;
   login(email: string, password: string): Promise<void>;
@@ -20,19 +20,18 @@ interface AuthContextData {
   logout(): void;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async currentUser => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (snap.exists()) {
-          const data = snap.data() as UserData;
-          setUser({ uid: currentUser.uid, ...data });
+          setUser({ uid: currentUser.uid, ...snap.data() } as UserData);
         }
       } else {
         setUser(null);
@@ -44,21 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   async function login(email: string, password: string) {
-    setLoading(true);
-    const user = await service.login(email, password);
-    setUser(user as UserData);
-    setLoading(false);
+    const userData = await authService.login(email, password);
+    setUser(userData as UserData);
   }
 
   async function register(name: string, email: string, password: string, role: UserData['role']) {
-    setLoading(true);
-    const newUser = await service.register(name, email, password, role);
-    setUser(newUser as UserData);
-    setLoading(false);
+    const userData = await authService.register(name, email, password, role);
+    setUser(userData as UserData);
   }
 
   function logout() {
-    firebaseSignOut(auth);
+    signOut(auth);
     setUser(null);
   }
 
